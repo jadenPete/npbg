@@ -28,11 +28,11 @@ pip install \
     git+https://github.com/DmitryUlyanov/glumpy \
     numpy-quaternion
 
-# pycuda
-git clone https://github.com/inducer/pycuda
-cd pycuda
-git submodule update --init
-export PATH=$PATH:/usr/local/cuda/bin
-./configure.py --cuda-enable-gl
-python setup.py install
-cd ..
+# # pycuda
+# git clone https://github.com/inducer/pycuda
+# cd pycuda
+# git submodule update --init
+# export PATH=$PATH:/usr/local/cuda/bin
+# ./configure.py --cuda-enable-gl
+# python setup.py install
+# cd ..

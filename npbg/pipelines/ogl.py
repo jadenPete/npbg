@@ -18,13 +18,13 @@ TextureOptimizerClass = optim.RMSprop
 
 def get_net(input_channels, args):
     net = UNet(
-        num_input_channels=input_channels, 
-        num_output_channels=3, 
-        feature_scale=args.net_size, 
-        more_layers=0, 
-        upsample_mode='bilinear', 
-        norm_layer='bn', 
-        last_act='', 
+        num_input_channels=input_channels,
+        num_output_channels=3,
+        feature_scale=args.net_size,
+        more_layers=0,
+        upsample_mode='nearest',
+        norm_layer='bn',
+        last_act='',
         conv_block=args.conv_block
         )
 
@@ -125,7 +125,7 @@ class TexturePipeline(Pipeline):
 
     def dataset_load(self, dataset):
         self.model.load_textures([ds.id for ds in dataset])
-        
+
         for ds in dataset:
             ds.load()
 
@@ -177,9 +177,9 @@ class Pix2PixPipeline(Pipeline):
         if not args.inference:
             self.ds_train, self.ds_val = get_datasets(args)
 
-            
+
             self.optimizer= optim.Adam(self.model.parameters(), lr=args.lr)
-                
+
 
             self.criterion = args.criterion_module(**args.criterion_args).cuda()
 
@@ -194,7 +194,7 @@ class Pix2PixPipeline(Pipeline):
     def dataset_unload(self, dataset):
         for ds in dataset:
             ds.unload()
-            
+
 
     def get_net(self):
         return self.net

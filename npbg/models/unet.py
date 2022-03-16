@@ -40,12 +40,12 @@ class PartialBlock(nn.Module):
 
         self.conv2 = nn.Sequential(
             normalization(out_channels),
-            nn.ReLU(),   
+            nn.ReLU(),
             nn.Conv2d(out_channels, out_channels, kernel_size, padding=1),
             normalization(out_channels),
             nn.ReLU()
         )
-                                       
+
     def forward(self, inputs, mask=None):
         outputs = self.conv1(inputs, mask)
         outputs = self.conv2(outputs)
@@ -74,7 +74,7 @@ class GatedBlock(nn.Module):
         )
 
     def forward(self, x, *args, **kwargs):
-        features = self.block.act_f(self.block.conv_f(x))
+        features = self.block.act_f(self.block.conv_f(x).to("cpu")).to("dml")
         mask = self.block.act_m(self.block.conv_m(x))
         output = features * mask
         output = self.block.norm(output)
@@ -147,7 +147,7 @@ class UNet(nn.Module):
     """
     def __init__(
         self,
-        num_input_channels=3, 
+        num_input_channels=3,
         num_output_channels=3,
         feature_scale=4,
         more_layers=0,
@@ -166,7 +166,7 @@ class UNet(nn.Module):
 
         if len(num_input_channels) < 5:
             num_input_channels += [0] * (5 - len(num_input_channels))
-        
+
         self.num_input_channels = num_input_channels[:5]
 
         if conv_block == 'basic':
@@ -228,26 +228,26 @@ class UNet(nn.Module):
         assert n_input == n_declared, f'got {n_input} input scales but declared {n_declared}'
 
         in64 = self.start(inputs[0], mask=masks[0])
-        
+
         mask = masks[1] if self.num_input_channels[1] else None
         down1 = self.down1(in64, mask)
-        
-        
+
+
         if self.num_input_channels[1]:
             down1 = torch.cat([down1, inputs[1]], 1)
-        
+
         mask = masks[2] if self.num_input_channels[2] else None
         down2 = self.down2(down1, mask)
-        
+
         if self.num_input_channels[2]:
             down2 = torch.cat([down2, inputs[2]], 1)
-        
+
         mask = masks[3] if self.num_input_channels[3] else None
         down3 = self.down3(down2, mask)
-        
+
         if self.num_input_channels[3]:
             down3 = torch.cat([down3, inputs[3]], 1)
-        
+
         mask = masks[4] if self.num_input_channels[4] else None
         down4 = self.down4(down3, mask)
         if self.num_input_channels[4]:
@@ -270,5 +270,5 @@ class UNet(nn.Module):
         up3 = self.up3(up4, down2)
         up2 = self.up2(up3, down1)
         up1 = self.up1(up2, in64)
-        
+
         return self.final(up1)

@@ -16,7 +16,7 @@ class ListModule(nn.Module):
     def __getitem__(self, idx):
         if idx >= len(self._modules):
             raise IndexError('index {} is out of range'.format(idx))
-        if idx < 0: 
+        if idx < 0:
             idx = len(self) + idx
 
         it = iter(self._modules.values())
@@ -59,7 +59,7 @@ class BoxFilter(nn.Module):
         super().__init__()
 
         self.seq = nn.Sequential(
-            nn.ReflectionPad2d(kernel_size//2), 
+            nn.ReflectionPad2d(kernel_size//2),
             nn.Conv2d(in_channels, out_channels, kernel_size, stride=1, padding=0, bias=None, groups=8)
         )
 
@@ -79,7 +79,7 @@ class GaussianLayer(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size=21, sigma=3):
         super(GaussianLayer, self).__init__()
         self.seq = nn.Sequential(
-            nn.ReflectionPad2d(kernel_size//2), 
+            nn.ReflectionPad2d(kernel_size//2),
             nn.Conv2d(in_channels, out_channels, kernel_size, stride=1, padding=0, bias=None, groups=8)
         )
 
@@ -106,7 +106,7 @@ class GaussianLayer(nn.Module):
 class NetAndTexture(nn.Module):
     def __init__(self, net, textures, supersampling=1, temporal_average=False):
         super().__init__()
-        
+
         self.net = net
         self.ss = supersampling
 
@@ -181,10 +181,11 @@ class NetAndTexture(nn.Module):
                 # input_cat = filter(input_cat)
 
                 if self.ss > 1:
-                    input_cat = nn.functional.interpolate(input_cat, scale_factor=1./self.ss, mode='bilinear')
+                    # input_cat = nn.functional.interpolate(input_cat, scale_factor=1./self.ss, mode='bilinear')
+                    input_cat = nn.functional.interpolate(input_cat, scale_factor=1./self.ss, mode='nearest')
 
                 input_multiscale.append(input_cat)
-            
+
             if self.temporal_average:
                 if self.last_input is not None:
                     for i in range(len(input_multiscale)):
@@ -205,7 +206,7 @@ class NetAndTexture(nn.Module):
 class MultiscaleNet(nn.Module):
     def __init__(self, net, input_modality, supersampling=1):
         super().__init__()
-        
+
         self.net = net
         self.input_modality = input_modality
         self.ss = supersampling

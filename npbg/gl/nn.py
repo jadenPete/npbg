@@ -21,7 +21,7 @@ class GaussianLayer(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size=21, sigma=3):
         super(GaussianLayer, self).__init__()
         self.seq = nn.Sequential(
-            nn.ReflectionPad2d(kernel_size//2), 
+            nn.ReflectionPad2d(kernel_size//2),
             nn.Conv2d(in_channels, out_channels, kernel_size, stride=1, padding=0, bias=None, groups=8)
         )
 
@@ -50,7 +50,7 @@ class BoxFilter(nn.Module):
         super().__init__()
 
         self.seq = nn.Sequential(
-            nn.ReflectionPad2d(kernel_size//2), 
+            nn.ReflectionPad2d(kernel_size//2),
             nn.Conv2d(in_channels, out_channels, kernel_size, stride=1, padding=0, bias=None, groups=8)
         )
 
@@ -67,10 +67,12 @@ class BoxFilter(nn.Module):
 def to_gpu(data):
     if isinstance(data, dict):
         for k in data:
-            data[k] = data[k].cuda()
+            # data[k] = data[k].cuda()
+            data[k] = data[k].to("dml")
         return data
     else:
-        return data.cuda()
+        # return data.cuda()
+        return data.to("dml")
 
 
 class OGL:
@@ -85,16 +87,17 @@ class OGL:
             args_upd['texture_ckpt'] = texture_ckpt
             if 'pointcloud' in scene_data:
                 args_upd['n_points'] = scene_data['pointcloud']['xyz'].shape[0]
-        
+
         pipeline, args = load_pipeline(net_ckpt, args_to_update=args_upd)
 
         self.model = pipeline.model
-        
+
         if args.pipeline == 'npbg.pipelines.ogl.TexturePipeline':
             self.model.load_textures(0)
 
         if self.gpu:
-            self.model.cuda()
+            # self.model.cuda()
+            self.model = self.model.to("dml")
         self.model.eval()
 
         if supersampling > 1:

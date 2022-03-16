@@ -58,8 +58,10 @@ class PointTexture(Texture):
         texture = texture.expand(texture.shape[0], sh[0], texture.shape[2]) # CxBxN
         texture = texture.contiguous().view(texture.shape[0], -1) # CxB*N
 
-        sample = torch.index_select(texture, 1, ind) # CxB*H*W
-        sample = sample.contiguous().view(sample.shape[0], sh[0], sh[1], sh[2]) # CxBxHxW
+        # sample = torch.index_select(texture, 1, ind) # CxB*H*W
+        # sample = sample.contiguous().view(sample.shape[0], sh[0], sh[1], sh[2]) # CxBxHxW
+        sample = torch.index_select(texture.to("cpu"), 1, ind.to("cpu")) # CxB*H*W
+        sample = sample.to("dml").contiguous().view(sample.shape[0], sh[0], sh[1], sh[2]) # CxBxHxW
         sample = sample.permute(1, 0, 2, 3) # BxCxHxW
 
         if self.activation == 'sigmoid':
@@ -128,4 +130,3 @@ class MeshTexture(Texture):
             return torch.tanh(out)
 
         return out
-        

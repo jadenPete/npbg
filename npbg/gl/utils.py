@@ -256,7 +256,7 @@ def setup_scene(scene, data, use_mesh=False, use_texture=False):
 
 def load_scene_data(path):
     with open(path, 'r') as f:
-        config = yaml.load(f)
+        config = yaml.safe_load(f)
 
     if 'pointcloud' in config:
         print('loading pointcloud...')
@@ -500,4 +500,3 @@ def nearest_train(view_mat, test_pose, p=0.05):
     dists_pick = [dists[i] for i in angs_sort]
     ang_dist_i = angs_sort[np.argmin(dists_pick)]
     return ang_dist_i #, angs_sort[0]
-
