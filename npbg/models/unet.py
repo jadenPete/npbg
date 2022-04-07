@@ -74,7 +74,11 @@ class GatedBlock(nn.Module):
         )
 
     def forward(self, x, *args, **kwargs):
-        features = self.block.act_f(self.block.conv_f(x).to("cpu")).to("dml")
+        # DirectML doesn't support ELU, so I implemented it in terms of ReLU and exp
+        def act_f(x):
+            return nn.ReLU()(x) + nn.ReLU()(-x) / -x * (torch.exp(x) - 1)
+
+        features = act_f(self.block.conv_f(x))
         mask = self.block.act_m(self.block.conv_m(x))
         output = features * mask
         output = self.block.norm(output)

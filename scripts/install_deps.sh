@@ -6,7 +6,7 @@ conda activate npbg
 pip install \
     numpy \
     pyyaml \
-    torch==1.3 \
+    directml-torch # torch==1.3 \
     torchvision==0.4.1 \
     tensorboardX \
     munch \
@@ -21,12 +21,12 @@ pip install \
     tqdm \
     scikit-learn
 
-conda install opencv
+conda install opencv quaternion
 
 # need to install separately
 pip install \
     git+https://github.com/DmitryUlyanov/glumpy \
-    numpy-quaternion
+    # numpy-quaternion
 
 # # pycuda
 # git clone https://github.com/inducer/pycuda

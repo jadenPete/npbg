@@ -181,6 +181,7 @@ class NetAndTexture(nn.Module):
                 # input_cat = filter(input_cat)
 
                 if self.ss > 1:
+                    # Unsupported on DirectML
                     # input_cat = nn.functional.interpolate(input_cat, scale_factor=1./self.ss, mode='bilinear')
                     input_cat = nn.functional.interpolate(input_cat, scale_factor=1./self.ss, mode='nearest')
 

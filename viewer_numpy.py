@@ -21,6 +21,9 @@ import numpy as np
 import torch
 import cv2
 
+import pathlib
+
+pathlib.PosixPath = pathlib.WindowsPath
 
 def get_args():
     parser = argparse.ArgumentParser(description='')
