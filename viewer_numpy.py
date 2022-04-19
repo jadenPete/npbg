@@ -13,7 +13,7 @@ from npbg.gl.programs import NNScene
 from npbg.gl.utils import load_scene_data, get_proj_matrix, crop_intrinsic_matrix, crop_proj_matrix, \
     setup_scene, rescale_K, FastRand, nearest_train, pca_color, extrinsics_from_view_matrix, extrinsics_from_xml
 from npbg.gl.nn import OGL
-from npbg.gl.camera import Trackball
+from npbg.gl.camera import PositionalCamera
 
 import os, sys
 import time
@@ -33,7 +33,6 @@ def get_args():
     parser.add_argument('--init-view', type=str, help='camera label for initial view or path to 4x4 matrix')
     parser.add_argument('--use-mesh', action='store_true')
     parser.add_argument('--use-texture', action='store_true')
-    parser.add_argument('--rmode', choices=['trackball', 'fly'], default='trackball')
     parser.add_argument('--fps', action='store_true', help='show fps')
     parser.add_argument('--light-position', type=str, default='', help='x,y,z')
     parser.add_argument('--replay-camera', type=str, default='', help='path to view_matrix to replay at given fps')
@@ -159,7 +158,7 @@ class MyApp():
             # force identity origin
             self.scene_data['model3d_origin'] = np.eye(4)
 
-        self.trackball = Trackball(init_view, self.viewport_size, 1, rotation_mode=args.rmode)
+        self.camera = PositionalCamera(init_view, self.viewport_size, 0.5)
 
         args.use_mesh = args.use_mesh or _config.get('use_mesh') or args.use_texture
 
@@ -230,10 +229,12 @@ class MyApp():
         self.window.push_handlers(on_draw=self.on_draw)
         self.window.push_handlers(on_resize=self.on_resize)
         self.window.push_handlers(on_key_press=self.on_key_press)
-        self.window.push_handlers(on_mouse_press=self.on_mouse_press)
-        self.window.push_handlers(on_mouse_drag=self.on_mouse_drag)
-        self.window.push_handlers(on_mouse_release=self.on_mouse_release)
-        self.window.push_handlers(on_mouse_scroll=self.on_mouse_scroll)
+        self.window.push_handlers(on_key_release=self.on_key_release)
+        self.window.push_handlers(on_mouse_motion=self.on_mouse_motion)
+        # self.window.push_handlers(on_mouse_press=self.on_mouse_press)
+        # self.window.push_handlers(on_mouse_drag=self.on_mouse_drag)
+        # self.window.push_handlers(on_mouse_release=self.on_mouse_release)
+        # self.window.push_handlers(on_mouse_scroll=self.on_mouse_scroll)
 
         self.mode0 = NNScene.MODE_COLOR
         self.mode1 = 0
@@ -250,7 +251,7 @@ class MyApp():
         self.last_view_matrix = None
         self.last_gt_image = None
 
-        self.mouse_pressed = False
+        # self.mouse_pressed = False
 
         self.args = args
 
@@ -308,9 +309,9 @@ class MyApp():
 
         np.savetxt(os.path.join(out_dir, get_name('pose') + '.txt'), self.last_view_matrix)
 
-    def get_next_view_matrix(self, frame_num, elapsed_time):
+    def get_next_view_matrix(self, frame_num, elapsed_time, dt):
         if self.camera_trajectory is None:
-            return self.trackball.pose
+            return self.camera.pose(dt)
 
         n = int(elapsed_time * args.replay_fps) % len(self.camera_trajectory)
         return self.camera_trajectory[n]
@@ -334,7 +335,7 @@ class MyApp():
         elif symbol == glfw.GLFW_KEY_U:
             self.mode0 = NNScene.MODE_UV
             self.neural_render = False
-        elif symbol == glfw.GLFW_KEY_D:
+        elif symbol == glfw.GLFW_KEY_E:
             self.mode0 = NNScene.MODE_DEPTH
             self.neural_render = False
         elif symbol == glfw.GLFW_KEY_L:
@@ -360,13 +361,16 @@ class MyApp():
             self.flat_color = not self.flat_color
         elif symbol == glfw.GLFW_KEY_I:
             self.print_info()
-        elif symbol == glfw.GLFW_KEY_S:
+        elif symbol == glfw.GLFW_KEY_V:
             self.save_screen()
-        else:
+        elif not self.camera.press(symbol):
             print(symbol, modifiers)
 
+    def on_key_release(self, symbol, _):
+        self.camera.release(symbol)
+
     def on_draw(self, dt):
-        self.last_view_matrix = self.get_next_view_matrix(self.n_frame, self.t_elapsed)
+        self.last_view_matrix = self.get_next_view_matrix(self.n_frame, self.t_elapsed, dt)
 
         self.last_frame = self.render_frame(self.last_view_matrix)
 
@@ -412,42 +416,14 @@ class MyApp():
 
     def on_resize(self, w, h):
         print(f'on_resize {w}x{h}')
-        self.trackball.resize((w, h))
+        self.camera.resize((w, h))
         self.screen_program['position'] = [(0, 0), (0, h), (w, 0), (w, h)]
 
     def on_close(self):
         pass
 
-    def on_mouse_press(self, x, y, buttons, modifiers):
-        # print(buttons, modifiers)
-        self.trackball.set_state(Trackball.STATE_ROTATE)
-        if (buttons == app.window.mouse.LEFT):
-            ctrl = (modifiers & app.window.key.MOD_CTRL)
-            shift = (modifiers & app.window.key.MOD_SHIFT)
-            if (ctrl and shift):
-                self.trackball.set_state(Trackball.STATE_ZOOM)
-            elif ctrl:
-                self.trackball.set_state(Trackball.STATE_ROLL)
-            elif shift:
-                self.trackball.set_state(Trackball.STATE_PAN)
-        elif (buttons == app.window.mouse.MIDDLE):
-            self.trackball.set_state(Trackball.STATE_PAN)
-        elif (buttons == app.window.mouse.RIGHT):
-            self.trackball.set_state(Trackball.STATE_ZOOM)
-
-        self.trackball.down(np.array([x, y]))
-
-        # Stop animating while using the mouse
-        self.mouse_pressed = True
-
-    def on_mouse_drag(self, x, y, dx, dy, buttons):
-        self.trackball.drag(np.array([x, y]))
-
-    def on_mouse_release(self, x, y, button, modifiers):
-        self.mouse_pressed = False
-
-    def on_mouse_scroll(self, x, y, dx, dy):
-        self.trackball.scroll(dy)
+    def on_mouse_motion(self, x, y, *_):
+        self.camera.motion(np.array([x, y]))
 
 
 if __name__ == '__main__':
