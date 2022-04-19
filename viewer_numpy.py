@@ -158,7 +158,7 @@ class MyApp():
             # force identity origin
             self.scene_data['model3d_origin'] = np.eye(4)
 
-        self.camera = PositionalCamera(init_view, self.viewport_size, 0.5)
+        self.camera = PositionalCamera(self.scene_data, init_view, self.viewport_size, 0.5)
 
         args.use_mesh = args.use_mesh or _config.get('use_mesh') or args.use_texture
 
@@ -231,10 +231,6 @@ class MyApp():
         self.window.push_handlers(on_key_press=self.on_key_press)
         self.window.push_handlers(on_key_release=self.on_key_release)
         self.window.push_handlers(on_mouse_motion=self.on_mouse_motion)
-        # self.window.push_handlers(on_mouse_press=self.on_mouse_press)
-        # self.window.push_handlers(on_mouse_drag=self.on_mouse_drag)
-        # self.window.push_handlers(on_mouse_release=self.on_mouse_release)
-        # self.window.push_handlers(on_mouse_scroll=self.on_mouse_scroll)
 
         self.mode0 = NNScene.MODE_COLOR
         self.mode1 = 0
@@ -250,8 +246,6 @@ class MyApp():
         self.last_frame = None
         self.last_view_matrix = None
         self.last_gt_image = None
-
-        # self.mouse_pressed = False
 
         self.args = args
 

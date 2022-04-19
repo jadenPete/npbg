@@ -19,7 +19,8 @@ pip install \
     huepy \
     "pillow<7" \
     tqdm \
-    scikit-learn
+    scikit-learn \
+    python-fcl
 
 conda install opencv quaternion
 
